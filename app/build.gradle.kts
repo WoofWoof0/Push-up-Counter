@@ -41,6 +41,15 @@ android {
 
 dependencies {
 
+    val camerax = "1.4.2"
+    implementation("androidx.camera:camera-core:$camerax")
+    implementaion("androidx.camera:camera-camera2:$camerax")
+    implementation("androidx.camera:camera-lifecycle:$camerax")
+    implementation("androidx.camera:camera-view:$camerax")
+    implementation("androidx.camera:camera-mlkit-vision:$camerax")
+
+    implementation("com.google.mlkit:pose-detection:18.0.0-beta5")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -56,4 +65,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
 }
+
+private fun DependencyHandlerScope.implementaion(string: String) {}
