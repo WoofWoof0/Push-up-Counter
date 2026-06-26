@@ -18,6 +18,7 @@ model_path = os.path.join(script_dir,'pose_landmarker_full.task')
 base_options = python.BaseOptions(model_asset_path=model_path)
 options = vision.PoseLandmarkerOptions(base_options=base_options, running_mode=RunningMode.VIDEO)
 detector = vision.PoseLandmarker.create_from_options(options)
+POSE_CONNECTIONS = vision.PoseLandmarksConnections.POSE_LANDMARKS
 
 cam = cv2.VideoCapture(0)
 
@@ -49,6 +50,18 @@ while cam.isOpened():
     if detection_result.pose_landmarks:
         h, w, _ = frame.shape
         for pose_landmarks in detection_result.pose_landmarks:
+            for connections in POSE_CONNECTIONS:
+                start_idx = connections.start
+                end_idx = connections.end
+
+                start_lm = pose_landmarks[start_idx]
+                end_lm = pose_landmarks[end_idx]
+
+                x1, y1 = int(start_lm.x * w), int(start_lm.y * h)
+                x2, y2 = int(end_lm.x * w), int(end_lm.y*h)
+
+                cv2.line(frame, (x1,y1), (x2,y2), (0, 255, 0), 2)
+
             for landmark in pose_landmarks:
                 cx, cy = int(landmark.x * w), int(landmark.y * h)
                 cv2.circle(frame, (cx,cy), 5, (0,255,0), -1)
