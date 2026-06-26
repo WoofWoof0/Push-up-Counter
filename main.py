@@ -18,6 +18,7 @@ model_path = os.path.join(script_dir,'pose_landmarker_full.task')
 base_options = python.BaseOptions(model_asset_path=model_path)
 options = vision.PoseLandmarkerOptions(base_options=base_options, running_mode=RunningMode.VIDEO)
 detector = vision.PoseLandmarker.create_from_options(options)
+
 POSE_CONNECTIONS = vision.PoseLandmarksConnections.POSE_LANDMARKS
 
 cam = cv2.VideoCapture(0)
@@ -50,6 +51,7 @@ while cam.isOpened():
     if detection_result.pose_landmarks:
         h, w, _ = frame.shape
         for pose_landmarks in detection_result.pose_landmarks:
+            #Draw lines connecting the landmarks.
             for connections in POSE_CONNECTIONS:
                 start_idx = connections.start
                 end_idx = connections.end
@@ -65,6 +67,22 @@ while cam.isOpened():
             for landmark in pose_landmarks:
                 cx, cy = int(landmark.x * w), int(landmark.y * h)
                 cv2.circle(frame, (cx,cy), 5, (0,255,0), -1)
+
+            #locate the left elbow using it's ID in MediaPipe[13].
+            left_elbow = pose_landmarks[13]
+            #locate the right elbow using it's ID in MediaPipe[14].
+            right_elbow = pose_landmarks[14]
+
+            #Convert normalized 0.0-1.0 coordinates into screen pixel locations for both left and right elbows.
+            left_elbow_x = int(left_elbow.x * w)
+            left_elbow_y = int(left_elbow.y * h)
+
+            right_elbow_x = int(right_elbow.x * w)
+            right_elbow_y = int(right_elbow.y * h)
+
+            #print out the location of both left and right elbow on the console.
+            print(f"Left Elbow Pixel Position -> X: {left_elbow_x}, Y: {left_elbow_y}\nRIght Elbow Pixel Position -> Y: {right_elbow_x}, Y: {right_elbow_y}" )
+
 
     cv2.imshow('frame',frame)
 
