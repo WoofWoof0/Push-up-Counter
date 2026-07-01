@@ -21,6 +21,16 @@ detector = vision.PoseLandmarker.create_from_options(options)
 
 POSE_CONNECTIONS = vision.PoseLandmarksConnections.POSE_LANDMARKS
 
+def calculate_angle(a, b, c):
+    ba = a - b
+    bc = c - b
+
+    cosine = np.dot(ba,bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+    cosine = np.clip(cosine, -1.0, 1.0)
+
+    angle = np.degrees(np.arccos(cosine))
+    return angle
+
 cam = cv2.VideoCapture(0)
 
 while cam.isOpened():
@@ -72,19 +82,24 @@ while cam.isOpened():
                 cv2.circle(frame, (cx,cy), 5, (0,255,0), -1)
 
             #locate the left elbow using it's ID in MediaPipe[13].
-            left_elbow = pose_landmarks[13]
+            left_elbow = np.array([pose_landmarks[13].x * w, pose_landmarks[13].y * h])
             #locate the right elbow using it's ID in MediaPipe[14].
-            right_elbow = pose_landmarks[14]
+            right_elbow = np.array([pose_landmarks[14].x * w, pose_landmarks[14].y * h])
+            #locate the left shoulder using it's ID in MediaPipe[11].
+            left_shoulder = np.array([pose_landmarks[11].x * w, pose_landmarks[11].y * h])
+            #locate the right shoulder using it's ID in MediaPipe[12].
+            right_shoulder = np.array([pose_landmarks[12].x * w, pose_landmarks[12].y * h])
+            #locate the left wrist using it's ID in MediaPipe[15].
+            left_wrist = np.array([pose_landmarks[15].x * w, pose_landmarks[15].y * h])
+            #locate the right wrist using it's ID in MediaPipe[16].
+            right_wrist = np.array([pose_landmarks[16].x * w, pose_landmarks[16].y * h])
 
-            #Convert normalized 0.0-1.0 coordinates into screen pixel locations for both left and right elbows.
-            left_elbow_x = int(left_elbow.x * w)
-            left_elbow_y = int(left_elbow.y * h)
 
-            right_elbow_x = int(right_elbow.x * w)
-            right_elbow_y = int(right_elbow.y * h)
+            left_angle = calculate_angle(left_shoulder,left_elbow,left_wrist)
+            right_angle = calculate_angle(right_shoulder,right_elbow,right_wrist)
 
             #print out the location of both left and right elbow on the console.
-            print(f"Left Elbow Pixel Position -> X: {left_elbow_x}, Y: {left_elbow_y}\nRIght Elbow Pixel Position -> Y: {right_elbow_x}, Y: {right_elbow_y}" )
+            print(f"Left Angle -> {left_angle}\nRight Angle -> {right_angle}")
 
 
     cv2.imshow('frame',frame)
