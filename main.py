@@ -56,15 +56,18 @@ while cam.isOpened():
                 start_idx = connections.start
                 end_idx = connections.end
 
-                start_lm = pose_landmarks[start_idx]
-                end_lm = pose_landmarks[end_idx]
 
-                x1, y1 = int(start_lm.x * w), int(start_lm.y * h)
-                x2, y2 = int(end_lm.x * w), int(end_lm.y*h)
+                if 11 <= start_idx <= 16 and 11 <= end_idx <= 16:
+                    start_lm = pose_landmarks[start_idx]
+                    end_lm = pose_landmarks[end_idx]
 
-                cv2.line(frame, (x1,y1), (x2,y2), (0, 255, 0), 2)
+                    x1, y1 = int(start_lm.x * w), int(start_lm.y * h)
+                    x2, y2 = int(end_lm.x * w), int(end_lm.y*h)
 
-            for landmark in pose_landmarks:
+                    cv2.line(frame, (x1,y1), (x2,y2), (0, 255, 0), 2)
+
+            for idx in range(11,17):
+                landmark = pose_landmarks[idx]
                 cx, cy = int(landmark.x * w), int(landmark.y * h)
                 cv2.circle(frame, (cx,cy), 5, (0,255,0), -1)
 
