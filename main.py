@@ -76,11 +76,6 @@ while cam.isOpened():
 
                     cv2.line(frame, (x1,y1), (x2,y2), (0, 255, 0), 2)
 
-            for idx in range(11,17):
-                landmark = pose_landmarks[idx]
-                cx, cy = int(landmark.x * w), int(landmark.y * h)
-                cv2.circle(frame, (cx,cy), 5, (0,255,0), -1)
-
             #locate the left elbow using it's ID in MediaPipe[13].
             left_elbow = np.array([pose_landmarks[13].x * w, pose_landmarks[13].y * h])
             #locate the right elbow using it's ID in MediaPipe[14].
@@ -101,6 +96,13 @@ while cam.isOpened():
             #print out the location of both left and right elbow on the console.
             print(f"Left Angle -> {left_angle}\nRight Angle -> {right_angle}")
 
+            for idx in range(11,17):
+                landmark = pose_landmarks[idx]
+                cx, cy = int(landmark.x * w), int(landmark.y * h)
+                cv2.circle(frame, (cx,cy), 5, (0,255,0), -1)
+            
+            cv2.putText(frame, f"{left_angle:.2f}", (int(left_elbow[0]),int(left_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cv2.putText(frame, f"{right_angle:.2f}", (int(right_elbow[0]), int(right_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     cv2.imshow('frame',frame)
 
