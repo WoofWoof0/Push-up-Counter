@@ -21,6 +21,14 @@ detector = vision.PoseLandmarker.create_from_options(options)
 
 POSE_CONNECTIONS = vision.PoseLandmarksConnections.POSE_LANDMARKS
 
+#threshold variables for up and down angle
+up_angle = 160
+down_angle = 90
+
+#variable of the stage of current person.
+stage = None
+
+#function that takes 3 landmark (shoulder, elbow, wrist) and calculate the angle.
 def calculate_angle(a, b, c):
     ba = a - b
     bc = c - b
@@ -94,15 +102,23 @@ while cam.isOpened():
             right_angle = calculate_angle(right_shoulder,right_elbow,right_wrist)
 
             #print out the location of both left and right elbow on the console.
-            print(f"Left Angle -> {left_angle}\nRight Angle -> {right_angle}")
+            #print(f"Left Angle -> {left_angle}\nRight Angle -> {right_angle}")
 
             for idx in range(11,17):
                 landmark = pose_landmarks[idx]
                 cx, cy = int(landmark.x * w), int(landmark.y * h)
                 cv2.circle(frame, (cx,cy), 5, (0,255,0), -1)
             
+            #show the angle of the left and right arm on the frame.
             cv2.putText(frame, f"{left_angle:.2f}", (int(left_elbow[0]),int(left_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.putText(frame, f"{right_angle:.2f}", (int(right_elbow[0]), int(right_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            if left_angle >= up_angle:
+                stage = "up"
+            elif left_angle <= down_angle:
+                stage = "down"
+            
+            print(f"Stage -> {stage}")
 
     cv2.imshow('frame',frame)
 
