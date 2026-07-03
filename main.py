@@ -116,6 +116,7 @@ while cam.isOpened():
             cv2.putText(frame, f"{left_angle:.2f}", (int(left_elbow[0]),int(left_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.putText(frame, f"{right_angle:.2f}", (int(right_elbow[0]), int(right_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
+            #if statement to increase the push-up counter.
             if left_angle >= up_angle:
                 if stage == "down":
                     counter+=1
