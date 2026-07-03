@@ -124,9 +124,11 @@ while cam.isOpened():
             elif left_angle <= down_angle:
                 if stage == "up":
                     stage = "down"
+
+            cv2.putText(frame, f"Push-Up (Stage : {stage}) : {counter}", (45,100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
             
-            print(f"Stage -> {stage}")
-            print(f"counter -> {counter}")
+            #print(f"Stage -> {stage}")
+            #print(f"counter -> {counter}")
 
     cv2.imshow('frame',frame)
 
