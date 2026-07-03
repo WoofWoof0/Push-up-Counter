@@ -8,6 +8,7 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
+#extract a quote from zenquotes API and turn it into a string.
 try:
     response = requests.get("https://zenquotes.io/api/random")
     data = response.json()
@@ -20,6 +21,8 @@ words = qoute.split(" ")
 sentence = []
 current_sen = ""
 
+#do-what : splitting the quote into characters and reconstruct it into a newer line for cv2.putText() to show.
+#missing this line may cause the quote go out of the window frame and not showing it properly.
 for word in words:
     if len(current_sen) + len(word) < max_chars:
         current_sen += word + " "
@@ -30,7 +33,7 @@ sentence.append(current_sen)
 
 RunningMode = mp.tasks.vision.RunningMode
 
-# get the exact folder path where main.py lives
+#get the exact folder path where main.py lives
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 #implementing model file into the code.
@@ -41,6 +44,10 @@ options = vision.PoseLandmarkerOptions(base_options=base_options, running_mode=R
 detector = vision.PoseLandmarker.create_from_options(options)
 
 POSE_CONNECTIONS = vision.PoseLandmarksConnections.POSE_LANDMARKS
+
+#Note : everyy landmark has a visibility score between 0.0 and 1.0 (1.0 = fully visible, very confident : 0.0 = not visible at all)
+#setting the MIN_VISIBILITY into 0.6 , which is a good value for the threshold.
+MIN_VISIBILITY = 0.6
 
 #threshold variables for up and down angle
 up_angle = 160
@@ -121,10 +128,6 @@ while cam.isOpened():
             #locate the right wrist using it's ID in MediaPipe[16].
             right_wrist = np.array([pose_landmarks[16].x * w, pose_landmarks[16].y * h])
 
-
-            left_angle = calculate_angle(left_shoulder,left_elbow,left_wrist)
-            right_angle = calculate_angle(right_shoulder,right_elbow,right_wrist)
-
             #print out the location of both left and right elbow on the console.
             #print(f"Left Angle -> {left_angle}\nRight Angle -> {right_angle}")
 
@@ -133,21 +136,31 @@ while cam.isOpened():
                 cx, cy = int(landmark.x * w), int(landmark.y * h)
                 cv2.circle(frame, (cx,cy), 5, (0,255,0), -1)
             
-            #show the angle of the left and right arm on the frame.
-            cv2.putText(frame, f"{left_angle:.2f}", (int(left_elbow[0]),int(left_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            cv2.putText(frame, f"{right_angle:.2f}", (int(right_elbow[0]), int(right_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            #do-what : check the visibility of the user's shoulder, elbow and wrist. If one of them didn't detected by the camera, the function 
+            #calculate angle will not be run, anle will not be drawn on the frame and counter will not be counting.
+            #missing this can cause confusion on the algorithm, small movements can caused the counter to start counting.
+            if (pose_landmarks[11].visibility > MIN_VISIBILITY and pose_landmarks[13].visibility > MIN_VISIBILITY and pose_landmarks[15].visibility > MIN_VISIBILITY):
+                left_angle = calculate_angle(left_shoulder,left_elbow,left_wrist)
+                right_angle = calculate_angle(right_shoulder,right_elbow,right_wrist)
 
-            #if statement to increase the push-up counter.
-            if left_angle >= up_angle:
-                if stage == "down":
-                    counter+=1
-                stage = "up"
-            elif left_angle <= down_angle:
-                if stage == "up":
-                    stage = "down"
+                #show the angle of the left and right arm on the frame.
+                cv2.putText(frame, f"{left_angle:.2f}", (int(left_elbow[0]),int(left_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.putText(frame, f"{right_angle:.2f}", (int(right_elbow[0]), int(right_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+                #if statement to increase the push-up counter.
+                if left_angle >= up_angle:
+                    if stage == "down":
+                        counter+=1
+                    stage = "up"
+                elif left_angle <= down_angle:
+                    if stage == "up":
+                        stage = "down"
 
 
-            cv2.putText(frame, f"Push-Up (Stage : {stage}) : {counter}", (45,100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+                cv2.putText(frame, f"Push-Up (Stage : {stage}) : {counter}", (45,100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
+            else:
+                cv2.putText(frame, "Please adjust your position!", (390, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+
             for i, sen in enumerate(sentence):
                 cv2.putText(frame, sen, (650,70 + i * 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
             
@@ -159,6 +172,7 @@ while cam.isOpened():
 
     key = cv2.waitKey(1) & 0xFF
 
+    #allow the user to press q to quit, and r to reset the counter.
     if key == ord('q'):
         break
     elif key == ord('r'):
