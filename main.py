@@ -157,8 +157,13 @@ while cam.isOpened():
 
     cv2.imshow('frame',frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    key = cv2.waitKey(1) & 0xFF
+
+    if key == ord('q'):
         break
+    elif key == ord('r'):
+        counter = 0
+        stage = None
 
 cam.release()
 cv2.destroyAllWindows()
