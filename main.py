@@ -105,7 +105,7 @@ while cam.isOpened():
                 start_idx = connections.start
                 end_idx = connections.end
 
-
+                #draw line connecting between the shoulder, elbow and wrist.
                 if 11 <= start_idx <= 16 and 11 <= end_idx <= 16:
                     start_lm = pose_landmarks[start_idx]
                     end_lm = pose_landmarks[end_idx]
@@ -136,23 +136,39 @@ while cam.isOpened():
                 cx, cy = int(landmark.x * w), int(landmark.y * h)
                 cv2.circle(frame, (cx,cy), 5, (0,255,0), -1)
             
+            if (pose_landmarks[13].visibility > pose_landmarks[14].visibility):
+                vis_shoulder = pose_landmarks[11]
+                vis_elbow = pose_landmarks[13]
+                vis_wrist = pose_landmarks[15]
+                shoulder = left_shoulder
+                elbow = left_elbow
+                wrist = left_wrist
+            else:
+                vis_shoulder = pose_landmarks[12]
+                vis_elbow = pose_landmarks[14]
+                vis_wrist = pose_landmarks[16]
+                shoulder = right_shoulder
+                elbow = right_elbow
+                wrist = right_wrist
+
             #do-what : check the visibility of the user's shoulder, elbow and wrist. If one of them didn't detected by the camera, the function 
             #calculate angle will not be run, anle will not be drawn on the frame and counter will not be counting.
             #missing this can cause confusion on the algorithm, small movements can caused the counter to start counting.
-            if (pose_landmarks[11].visibility > MIN_VISIBILITY and pose_landmarks[13].visibility > MIN_VISIBILITY and pose_landmarks[15].visibility > MIN_VISIBILITY):
+            if (vis_shoulder.visibility > MIN_VISIBILITY and vis_elbow.visibility > MIN_VISIBILITY and vis_wrist.visibility > MIN_VISIBILITY):
                 left_angle = calculate_angle(left_shoulder,left_elbow,left_wrist)
                 right_angle = calculate_angle(right_shoulder,right_elbow,right_wrist)
+                angle = calculate_angle(shoulder, elbow, wrist)
 
                 #show the angle of the left and right arm on the frame.
                 cv2.putText(frame, f"{left_angle:.2f}", (int(left_elbow[0]),int(left_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 cv2.putText(frame, f"{right_angle:.2f}", (int(right_elbow[0]), int(right_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
                 #if statement to increase the push-up counter.
-                if left_angle >= up_angle:
+                if angle >= up_angle:
                     if stage == "down":
                         counter+=1
                     stage = "up"
-                elif left_angle <= down_angle:
+                elif angle <= down_angle:
                     if stage == "up":
                         stage = "down"
 
