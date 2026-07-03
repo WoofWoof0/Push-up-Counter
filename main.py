@@ -28,6 +28,9 @@ down_angle = 90
 #variable of the stage of current person.
 stage = None
 
+#counter variable to store the value of the number of push-up.
+counter = 0
+
 #function that takes 3 landmark (shoulder, elbow, wrist) and calculate the angle.
 def calculate_angle(a, b, c):
     ba = a - b
@@ -114,11 +117,15 @@ while cam.isOpened():
             cv2.putText(frame, f"{right_angle:.2f}", (int(right_elbow[0]), int(right_elbow[1]) - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
             if left_angle >= up_angle:
+                if stage == "down":
+                    counter+=1
                 stage = "up"
             elif left_angle <= down_angle:
-                stage = "down"
+                if stage == "up":
+                    stage = "down"
             
             print(f"Stage -> {stage}")
+            print(f"counter -> {counter}")
 
     cv2.imshow('frame',frame)
 
