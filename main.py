@@ -172,7 +172,14 @@ while cam.isOpened():
                     if stage == "up":
                         stage = "down"
 
+                if angle > up_angle:
+                    arc_color = (0, 255, 0)
+                elif angle < down_angle:
+                    arc_color = (0, 0, 255)
+                else:
+                    arc_color = (0, 255, 255)
 
+                cv2.ellipse(frame, (int(vis_elbow.x*w), int(vis_elbow.y*h)), (30, 30), 0, 0, angle, arc_color, 2)
                 cv2.putText(frame, f"Push-Up (Stage : {stage}) : {counter}", (45,100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
             else:
                 cv2.putText(frame, "Please adjust your position!", (390, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
@@ -182,7 +189,6 @@ while cam.isOpened():
             
             #print(f"Stage -> {stage}")
             #print(f"counter -> {counter}")
-
 
     cv2.imshow('frame',frame)
 
