@@ -1,11 +1,32 @@
 import cv2
 import os
 import time
+import requests
 
 import numpy as np
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+
+try:
+    response = requests.get("https://zenquotes.io/api/random")
+    data = response.json()
+    qoute = f'"{data[0]["q"]}" - {data[0]["a"]}'
+except:
+    qoute = "You are doing good! Keep it up!"
+
+max_chars = 60
+words = qoute.split(" ")
+sentence = []
+current_sen = ""
+
+for word in words:
+    if len(current_sen) + len(word) < max_chars:
+        current_sen += word + " "
+    else:
+        sentence.append(current_sen)
+        current_sen = word + " "
+sentence.append(current_sen)
 
 RunningMode = mp.tasks.vision.RunningMode
 
@@ -125,10 +146,14 @@ while cam.isOpened():
                 if stage == "up":
                     stage = "down"
 
+
             cv2.putText(frame, f"Push-Up (Stage : {stage}) : {counter}", (45,100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+            for i, sen in enumerate(sentence):
+                cv2.putText(frame, sen, (650,70 + i * 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
             
             #print(f"Stage -> {stage}")
             #print(f"counter -> {counter}")
+
 
     cv2.imshow('frame',frame)
 
