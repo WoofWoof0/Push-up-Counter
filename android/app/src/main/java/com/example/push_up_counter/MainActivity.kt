@@ -13,8 +13,23 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-
+import com.google.mediapipe.tasks.core.BaseOptions
+import com.google.mediapipe.tasks.vision.core.RunningMode
+import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 class MainActivity : AppCompatActivity() {
+    var poseLandmarker: PoseLandmarker? = null
+    val modelName = "pose_landmarker_full.task"
+    val baseOptionBuilder = BaseOptions.builder().setModelAssetPath(modelName)
+    val baseOptions = baseOptionBuilder.build()
+
+    val optionsBuilder = PoseLandmarker.PoseLandmarkerOptions.builder()
+        .setBaseOptions(baseOptionBuilder.build())
+        .setResultListener { result, image ->  }
+        .setErrorListener {  }
+        .setRunningMode(RunningMode.LIVE_STREAM)
+
+    val option = optionsBuilder.build()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -24,6 +39,8 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        poseLandmarker = PoseLandmarker.createFromOptions(this, option)
 
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startCamera()
@@ -45,6 +62,7 @@ class MainActivity : AppCompatActivity() {
             val previewView = findViewById<PreviewView>(R.id.previewView)
             preview.setSurfaceProvider(previewView.surfaceProvider)
             val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
-            cameraProvider.bindToLifecycle(this, cameraSelector,preview)}, ContextCompat.getMainExecutor((this)))
+            cameraProvider.bindToLifecycle(this, cameraSelector,preview)},
+            ContextCompat.getMainExecutor((this)))
     }
 }
