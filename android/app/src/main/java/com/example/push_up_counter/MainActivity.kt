@@ -10,9 +10,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import android.Manifest
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import com.google.mediapipe.framework.image.MediaImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
@@ -30,6 +32,7 @@ class MainActivity : AppCompatActivity() {
 
     val option = optionsBuilder.build()
 
+    @androidx.camera.core.ExperimentalGetImage
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -53,8 +56,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @androidx.camera.core.ExperimentalGetImage
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+
+        val imageAnalyzer = ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
 
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
@@ -62,7 +68,22 @@ class MainActivity : AppCompatActivity() {
             val previewView = findViewById<PreviewView>(R.id.previewView)
             preview.setSurfaceProvider(previewView.surfaceProvider)
             val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
-            cameraProvider.bindToLifecycle(this, cameraSelector,preview)},
+
+            imageAnalyzer.setAnalyzer(ContextCompat.getMainExecutor(this)) { imageProxy ->
+                // get the underlying Android Image
+                val mediaImage= imageProxy.image
+                if (mediaImage != null) {
+                    // Convert to MediaPipe image using MediaImageBuilder
+                    val mpImage = MediaImageBuilder(mediaImage).build()
+
+                    // Extract the timestamp (in millisecond)
+                    val frameTimestamp = imageProxy.imageInfo.timestamp
+                    poseLandmarker?.detectAsync(mpImage, frameTimestamp)
+                }
+                // Close the ImageProxy to prevent camera freeze
+                imageProxy.close()
+            }
+            cameraProvider.bindToLifecycle(this, cameraSelector,preview, imageAnalyzer)},
             ContextCompat.getMainExecutor((this)))
     }
 }
