@@ -14,6 +14,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.framework.image.MediaImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
@@ -33,9 +34,10 @@ class MainActivity : AppCompatActivity() {
     // declare the current stage of the push-up.
     var stage: String? = null
 
-    //decalre the threshold of the angles.
+    //declare the threshold of the angles.
     var upAngle = 160
     var downAngle = 90
+
     private fun calculate(a: FloatArray, b: FloatArray, c: FloatArray): Float {
 
         val ba = FloatArray(2) {a[it] - b[it]}
@@ -89,6 +91,13 @@ class MainActivity : AppCompatActivity() {
                     stage = "down"
                 }
             }
+
+            runOnUiThread {
+                val overlayView = findViewById<OverlayView>(R.id.overlayView)
+                overlayView.counter = counter
+                overlayView.stage = stage
+                overlayView.invalidate()
+            }
         }
         .setErrorListener {  }
         .setRunningMode(RunningMode.LIVE_STREAM)
@@ -125,7 +134,8 @@ class MainActivity : AppCompatActivity() {
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
-        val imageAnalyzer = ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
+        val imageAnalyzer = ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).setOutputImageFormat(
+            ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888).build()
 
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
@@ -136,18 +146,12 @@ class MainActivity : AppCompatActivity() {
 
             imageAnalyzer.setAnalyzer(ContextCompat.getMainExecutor(this)) { imageProxy ->
                 // get the underlying Android Image
-                val mediaImage= imageProxy.image
-
-                if (mediaImage != null) {
-                    // Convert to MediaPipe image using MediaImageBuilder
-                    val mpImage = MediaImageBuilder(mediaImage).build()
-
-                    // Extract the timestamp (in millisecond)
-                    val frameTimestamp = imageProxy.imageInfo.timestamp
-                    poseLandmarker?.detectAsync(mpImage, frameTimestamp)
-                }
+                val bitmap = imageProxy.toBitmap()
+                val mpImage = BitmapImageBuilder(bitmap).build()
+                val frameTimestamp = imageProxy.imageInfo.timestamp
+                poseLandmarker?.detectAsync(mpImage, frameTimestamp)
                 // Close the ImageProxy to prevent camera freeze
-                imageProxy.close()
+                imageProxy.cl
             }
 
             cameraProvider.bindToLifecycle(this, cameraSelector,preview, imageAnalyzer)},
