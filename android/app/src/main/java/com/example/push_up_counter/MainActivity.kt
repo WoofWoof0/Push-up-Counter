@@ -14,8 +14,8 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import com.google.mediapipe.formats.proto.LandmarkProto
 import com.google.mediapipe.framework.image.BitmapImageBuilder
-import com.google.mediapipe.framework.image.MediaImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
@@ -37,6 +37,8 @@ class MainActivity : AppCompatActivity() {
     //declare the threshold of the angles.
     var upAngle = 160
     var downAngle = 90
+
+    val minVisibility = 0.6f
 
     private fun calculate(a: FloatArray, b: FloatArray, c: FloatArray): Float {
 
@@ -61,6 +63,7 @@ class MainActivity : AppCompatActivity() {
         .setBaseOptions(baseOptionBuilder.build())
         .setResultListener { result, image ->
             val  landmarks = result.landmarks().firstOrNull() ?: return@setResultListener
+
             val leftShoulder = landmarks[11]
             val rightShoulder = landmarks[12]
 
@@ -70,24 +73,41 @@ class MainActivity : AppCompatActivity() {
             val leftWrist = landmarks[15]
             val rightWrist = landmarks[16]
 
-            val leftShoulderArray = floatArrayOf(leftShoulder.x(),leftShoulder.y())
-            val rightShoulderArray = floatArrayOf(rightShoulder.x(),rightShoulder.y())
+            val angle : Float
+            val shoulderArray : FloatArray
+            val elbowArray : FloatArray
+            val wristArray : FloatArray
+            var visElbow : com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 
-            val leftElbowArray = floatArrayOf(leftElbow.x(),leftElbow.y())
-            val rightElbowArray = floatArrayOf(rightElbow.x(),rightElbow.y())
+            if (landmarks[13].visibility().orElse(0.0f) > landmarks[14].visibility().orElse(0.0f)) {
+                shoulderArray = floatArrayOf(leftShoulder.x(),leftShoulder.y())
+                elbowArray = floatArrayOf(leftElbow.x(),leftElbow.y())
+                wristArray = floatArrayOf(leftWrist.x(),leftWrist.y())
+                visElbow = leftElbow
+            } else {
+                shoulderArray = floatArrayOf(rightShoulder.x(),rightShoulder.y())
+                elbowArray = floatArrayOf(rightElbow.x(),rightElbow.y())
+                wristArray = floatArrayOf(rightWrist.x(),rightWrist.y())
+                visElbow = rightElbow
+            }
 
-            val leftWristArray = floatArrayOf(leftWrist.x(),leftWrist.y())
-            val rightWristArray = floatArrayOf(rightWrist.x(),rightWrist.y())
+            if (leftShoulder.visibility().orElse(0.0f) > minVisibility && leftElbow.visibility().orElse(0.0f) > minVisibility && leftWrist.visibility().orElse(0.0f) > minVisibility) {
 
-            val leftAngle = calculate(leftShoulderArray,leftElbowArray,leftWristArray)
+                angle = calculate(shoulderArray,elbowArray,wristArray)
 
-            if (leftAngle >= upAngle) {
+            } else {
+
+                angle = calculate(shoulderArray, elbowArray, wristArray)
+
+            }
+
+            if (angle >= upAngle) {
                 if (stage == "down") {
-                    counter += 1
+                    counter+=1
                 }
                 stage = "up"
-            } else if (leftAngle <= downAngle) {
-                if (stage == "up"){
+            } else if (angle <= downAngle){
+                if (stage == "up") {
                     stage = "down"
                 }
             }
@@ -151,7 +171,7 @@ class MainActivity : AppCompatActivity() {
                 val frameTimestamp = imageProxy.imageInfo.timestamp
                 poseLandmarker?.detectAsync(mpImage, frameTimestamp)
                 // Close the ImageProxy to prevent camera freeze
-                imageProxy.cl
+                imageProxy.close()
             }
 
             cameraProvider.bindToLifecycle(this, cameraSelector,preview, imageAnalyzer)},
