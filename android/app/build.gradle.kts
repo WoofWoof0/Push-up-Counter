@@ -49,4 +49,5 @@ dependencies {
     implementation(libs.camera.view)
 
     implementation(libs.mediapipe.tasks.vision)
+    implementation(libs.okhttp)
 }

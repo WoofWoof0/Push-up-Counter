@@ -14,13 +14,15 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import com.google.mediapipe.formats.proto.LandmarkProto
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import kotlin.math.acos
 import kotlin.math.sqrt
+import okhttp3.*
+import java.io.IOException
+import org.json.JSONArray
 
 class MainActivity : AppCompatActivity() {
     var poseLandmarker: PoseLandmarker? = null
@@ -73,45 +75,44 @@ class MainActivity : AppCompatActivity() {
             val leftWrist = landmarks[15]
             val rightWrist = landmarks[16]
 
-            val angle : Float
             val shoulderArray : FloatArray
             val elbowArray : FloatArray
             val wristArray : FloatArray
             var visElbow : com.google.mediapipe.tasks.components.containers.NormalizedLandmark
+            var visShoulder : com.google.mediapipe.tasks.components.containers.NormalizedLandmark
+            var visWrist : com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 
             if (landmarks[13].visibility().orElse(0.0f) > landmarks[14].visibility().orElse(0.0f)) {
                 shoulderArray = floatArrayOf(leftShoulder.x(),leftShoulder.y())
                 elbowArray = floatArrayOf(leftElbow.x(),leftElbow.y())
                 wristArray = floatArrayOf(leftWrist.x(),leftWrist.y())
                 visElbow = leftElbow
+                visShoulder = leftShoulder
+                visWrist = leftWrist
             } else {
                 shoulderArray = floatArrayOf(rightShoulder.x(),rightShoulder.y())
                 elbowArray = floatArrayOf(rightElbow.x(),rightElbow.y())
                 wristArray = floatArrayOf(rightWrist.x(),rightWrist.y())
                 visElbow = rightElbow
+                visShoulder = rightShoulder
+                visWrist = rightWrist
             }
 
-            if (leftShoulder.visibility().orElse(0.0f) > minVisibility && leftElbow.visibility().orElse(0.0f) > minVisibility && leftWrist.visibility().orElse(0.0f) > minVisibility) {
+            if (visElbow.visibility().orElse(0.0f) > minVisibility && visShoulder.visibility().orElse(0.0f) > minVisibility && visWrist.visibility().orElse(0.0f) > minVisibility) {
 
-                angle = calculate(shoulderArray,elbowArray,wristArray)
+                val angle = calculate(shoulderArray, elbowArray, wristArray)
 
-            } else {
-
-                angle = calculate(shoulderArray, elbowArray, wristArray)
-
-            }
-
-            if (angle >= upAngle) {
-                if (stage == "down") {
-                    counter+=1
-                }
-                stage = "up"
-            } else if (angle <= downAngle){
-                if (stage == "up") {
-                    stage = "down"
+                if (angle >= upAngle) {
+                    if (stage == "down") {
+                        counter += 1
+                    }
+                    stage = "up"
+                } else if (angle <= downAngle) {
+                    if (stage == "up") {
+                        stage = "down"
+                    }
                 }
             }
-
             runOnUiThread {
                 val overlayView = findViewById<OverlayView>(R.id.overlayView)
                 overlayView.counter = counter
@@ -148,6 +149,32 @@ class MainActivity : AppCompatActivity() {
                 100
             )
         }
+
+        val client = OkHttpClient()
+        val request = Request.Builder().url("https://zenquotes.io/api/random").build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread {
+                    val overlayView = findViewById<OverlayView>(R.id.overlayView)
+                    overlayView.printQuote = "You are doing Great! Keep it up!"
+                    overlayView.invalidate()
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val data = JSONArray(response.body?.string())
+                val quote = data.getJSONObject(0).getString("q")
+                val author = data.getJSONObject(0).getString("a")
+
+                var printQuote : String =  "Quote : $quote - $author"
+                runOnUiThread {
+                    val overlayView = findViewById<OverlayView>(R.id.overlayView)
+                    overlayView.printQuote = printQuote
+                    overlayView.invalidate()
+                }
+            }
+        })
     }
 
     @androidx.camera.core.ExperimentalGetImage
